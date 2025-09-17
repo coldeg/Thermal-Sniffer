@@ -11,8 +11,8 @@
 #define COLORED 0
 #define UNCOLORED 1
 
-static unsigned char image[1024];
-static Paint paint(image, 0, 0);
+static unsigned char image[128 * 24 / 8];
+static Paint paint(image, 128, 24);
 static Epd epd;
 
 void displaySetup() {
@@ -24,8 +24,6 @@ void displaySetup() {
     epd.ClearFrameMemory(0xFF);
     epd.DisplayFrame();
     paint.SetRotate(ROTATE_0);
-    paint.SetWidth(128);
-    paint.SetHeight(24);
 }
 
 void displayValues(float temperature, double pressure) {
