@@ -7,6 +7,7 @@
 #include <MS5611.h>  //barosensor
 #define Addr 0x18 // MCP9808 I2C address is 0x18(24) tempsensor
 #include <Wire.h> // serial monitor
+#include "buzzer.h"
 
 
 //epaper module___________________________________________________________________
@@ -47,14 +48,6 @@ float diffTemp;
 float tempCorr;
 
 //Buzzer module_______________________________________________________________________
-// create la note for buzzer
-float tonal = 440;
-// create one note pitch for buzzer
-float pitch = 1.059463119;
-// strictly positive number for pitch modulo
-int variaNote = 1;
-// create counter for resetting tonal to 440 hz if no temp change for 5 seconds
-int counter = 1;
 
 //sensibility thermal sniffer potentiometer module____________________________________
 int treshCount = 1; //
@@ -321,54 +314,8 @@ if (counterDisp > 40)
  //sensibility thermal sniffer potentiometer module____________________________________
  // read the value from the potentiometer as treshold for beep with temp change, analogRead() returns a number between 0 and 1023 that is proportional to the amount of voltage being applied to the pin. 
   pot = analogRead(potPin)/100;   
-  val = pot/10 + 0.6; 
-   
- //Buzzer module_______________________________________________________________________
- // speakertone code to be tweaked I wanted notes to be played therefore i use 440 hertz as base note and varianote pitches tonal to one (or more) notes higher or lesser in function of the temp diff
- // val = treshold breaker from potentiometer
+ val = pot/10 + 0.6;
 
-    if (treshCount < 2) // set treshTemp and treshPress as temperatureP and pressureP at startup and if temp stagnation over 20 loops it gives a base reference like  (this is 0 m/s for an altivario)
-          {
-          treshTemp = temperatureP; 
-          treshPress = pressureP;
-          treshCount = 2;
-          }
-  // get pressure diff between recorded press and insta press
-  diffPress = (treshPress - pressureP);
-  // get temp correction with pressure diff
-  tempCorr = diffPress*0.09411616;
-  if ( (abs(diffTemp) - (val/10)) > 0)
-    {
-      if (diffTemp > 0.00) // temp increase
-        {
-        counter = 2;
-        // create absolute value of temp diff
-        variaNote = abs(treshTemp - temperatureP + tempCorr)*5;
-        //Serial.println(variaNote);
-        tonal = 440 * pow(pitch,variaNote);
-        tone(6,tonal,1000);
-        }  
-      if (-diffTemp > 0.00 ) // temp decrease
-        {
-        counter = 2;
-        variaNote = (1 - abs(treshTemp - temperatureP + tempCorr))*5;
-        tonal = 440 / pow(pitch,variaNote);
-        tone(6,tonal,1000);
-        } 
-    }
- if ( (abs(diffTemp) - (val/10)) < 0) // temp stagnation
-  {
-  counter = counter +1;
-  if (counter < 20)
-    {
-    tone(6,tonal,1000); //reset tonal if stagnation
-    }
-  //Serial.print(" counter = ");Serial.println(counter);
-  if (counter > 20) //
-    {
-    treshCount = 1;
-    counter = 22;
-    
-   }
-  }
+ //Buzzer module_______________________________________________________________________
+ handleBuzzer(diffTemp, tempCorr, val/10);
 }
