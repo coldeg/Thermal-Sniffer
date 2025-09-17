@@ -6,13 +6,29 @@
 
 #include <math.h>
 
+static constexpr float LOOP_PERIOD_SECONDS = 1.0f;  // Matches the 1 s delay at the end of loop().
+static const PotentiometerScale kGradientScale = {0.01f, 0.30f};
+static constexpr uint8_t kPotSmoothingSamples = 8;
+
+/**
+ * @brief Converts the gradient-based potentiometer setting into a per-iteration delta.
+ *
+ * The potentiometer is configured to cover 0.01–0.30 °C/s (after adiabatic compensation or
+ * an equivalent vertical speed range). The filter and hysteresis logic operate on the
+ * temperature delta observed between two loop iterations, so we scale the gradient back to a
+ * delta by multiplying it with the sampling period.
+ */
+static float gradientSettingToFilterDelta(float gradientCelsiusPerSecond) {
+  return gradientCelsiusPerSecond * LOOP_PERIOD_SECONDS;
+}
+
 void setup() {
   Serial.begin(9600);
   temperatureSensorSetup();
   barometerSetup();
   displaySetup();
   buzzerSetup();
-  potentiometerSetup(2);
+  potentiometerSetup(2, kGradientScale, kPotSmoothingSamples);
 }
 
 void loop() {
@@ -21,7 +37,8 @@ void loop() {
   static float lastTemp = temperature;
   float diff = temperature - lastTemp;
   lastTemp = temperature;
-  float threshold = readPotentiometer();
+  float gradientSetting = readPotentiometer();
+  float threshold = gradientSettingToFilterDelta(gradientSetting);
   buzzerUpdate(diff, threshold);
 
   static float lastDisplayedTemp = NAN;
